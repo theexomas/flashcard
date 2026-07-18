@@ -173,6 +173,26 @@ select.cat{
 .m-cancel{background:transparent;border:1px solid var(--line);color:var(--muted)}
 .m-ok{background:var(--blue);border:0;color:#fff}
 .m-ok:disabled{background:var(--panel-2);color:var(--muted)}
+/* ---------- grammar screen ---------- */
+.grammar-card{
+  background:linear-gradient(145deg,var(--panel),var(--panel-2));
+  border:1px solid var(--line);border-radius:var(--radius);
+  padding:22px 18px;margin-bottom:12px;
+}
+.grammar-card .g-lesson{font-size:11.5px;color:var(--muted);letter-spacing:.05em;margin-bottom:6px;font-weight:600;text-transform:uppercase}
+.grammar-card .g-title{font-size:19px;font-weight:800;margin-bottom:10px;color:var(--text)}
+.grammar-card .g-rule{font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:12px}
+.grammar-card .g-examples{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:7px}
+.grammar-card .g-ex{font-size:13.5px;line-height:1.5}
+.grammar-card .g-ex .ko{font-family:"Noto Sans KR";font-weight:700;color:var(--text)}
+.grammar-card .g-ex .mn{color:var(--muted);margin-left:6px}
+.grammar-empty{text-align:center;padding:40px 0;color:var(--muted);font-size:14px}
+.g-import-hint{
+  background:rgba(76,141,255,.08);border:1px solid rgba(76,141,255,.25);
+  border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#8ab4ff;line-height:1.6
+}
+.g-import-hint code{background:rgba(76,141,255,.15);border-radius:6px;padding:2px 6px;font-size:12px}
+
 /* ---------- sync / auth ---------- */
 .sync-dot{
   position:absolute;top:6px;right:6px;width:9px;height:9px;border-radius:50%;
@@ -261,6 +281,7 @@ select.cat{
 
   <button class="big-btn primary" id="btnReview">Давталт эхлүүлэх</button>
   <button class="big-btn ghost" id="btnPractice">Чөлөөт дасгал (SRS-гүй сонголтоос)</button>
+  <button class="big-btn ghost" id="btnGrammar" style="border-color:rgba(76,141,255,.4);color:#8ab4ff">📖 Дүрэм давтах</button>
   <p class="hint">Давталт: SM-2 алгоритмаар зөв хариулсан үгийн интервал уртсаж, алдсан үг дахин ойртоно. Чөлөөт дасгал ч гэсэн давталтын хуваарьт тооцогдоно.</p>
 </div>
 
@@ -278,6 +299,18 @@ select.cat{
   <div class="opts" id="opts"></div>
   <div class="next-row" id="nextRow"></div>
   <button class="quit" id="btnQuit">Гарах — явц хадгалагдана</button>
+</div>
+
+<!-- ============ GRAMMAR ============ -->
+<div class="screen" id="scrGrammar">
+  <div class="topbar">
+    <button class="quit" id="btnGrammarBack" style="margin:0;width:auto;font-size:14px;color:var(--text)">← Буцах</button>
+    <div style="flex:1;text-align:right;font-size:13px;color:var(--muted)" id="grammarMeta"></div>
+  </div>
+  <div class="g-import-hint" id="grammarHint">
+    Шинэ хичээлийн дүрэм нэмэхдээ: <code>📥</code> товч → <strong>Дүрэм JSON</strong> таб → JSON файлаа буулгаж Import хий.
+  </div>
+  <div id="grammarList"></div>
 </div>
 
 <!-- ============ RESULTS ============ -->
@@ -299,6 +332,11 @@ select.cat{
 <!-- ============ IMPORT MODAL ============ -->
 <div class="modal-bg" id="modalBg">
   <div class="modal">
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="chip on" id="tabWords" style="flex:1;border-radius:10px;text-align:center">Үг оруулах</button>
+      <button class="chip" id="tabGrammarImp" style="flex:1;border-radius:10px;text-align:center">Дүрэм JSON</button>
+    </div>
+    <div id="paneWords">
     <h3>Өөрийн үг оруулах</h3>
     <p class="sub">Word/Excel/Google Docs-оос хуулж буулгана уу. «Үг,Тайлбар» эсвэл «Үг [Tab] Тайлбар» хэлбэр, мөн хуучин «이모지 Тайлбар • дуудлага» формат хоёулаа танигдана.</p>
     <textarea id="impText" placeholder="안녕하세요,Сайн байна уу?&#10;감사합니다,Баярлалаа"></textarea>
@@ -321,6 +359,18 @@ select.cat{
       <button class="m-cancel" id="impCancel">Cancel</button>
       <button class="m-ok" id="impOk" disabled>Import</button>
     </div>
+    </div><!-- /paneWords -->
+
+    <div id="paneGrammarImp" style="display:none">
+      <h3>Дүрэм JSON оруулах</h3>
+      <p class="sub">Доорх форматаар JSON буулгана уу. Шинэ хичээл үзэх бүрт надаас JSON гаргуулж import хийнэ.</p>
+      <textarea id="grammarImpText" placeholder='[{"lesson":1,"title":"입니다","rule":"Нэр үгийн ард залгаж «A бол B» утга илэрхийлнэ.","examples":[{"ko":"학생입니다.","mn":"Оюутан."}]}]' style="min-height:180px"></textarea>
+      <div class="auth-msg err" id="grammarImpErr" style="display:none"></div>
+      <div class="modal-actions">
+        <button class="m-cancel" id="grammarImpCancel">Cancel</button>
+        <button class="m-ok" id="grammarImpOk" disabled>Import</button>
+      </div>
+    </div><!-- /paneGrammarImp -->
   </div>
 </div>
 
@@ -686,13 +736,95 @@ function renderResults(){
 const esc=s=>s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
 /* ---------- screens ---------- */
-function show(id){['scrHome','scrQuiz','scrResults'].forEach(s=>$(s).classList.toggle('show',s===id));window.scrollTo(0,0)}
+function show(id){['scrHome','scrQuiz','scrResults','scrGrammar'].forEach(s=>$(s).classList.toggle('show',s===id));window.scrollTo(0,0)}
 $('btnReview').onclick=()=>startSession('review');
 $('btnPractice').onclick=()=>startSession('practice');
 $('btnQuit').onclick=()=>{speechSynthesis&&speechSynthesis.cancel();show('scrHome');renderHome();};
 $('btnHome').onclick=()=>{show('scrHome');renderHome();};
 $('btnAgain').onclick=()=>startSession('review');
 $('btnSpeak').onclick=()=>{const c=session.cards[session.ix];speak(c.ko)};
+
+/* ---------- grammar ---------- */
+const K_GRAMMAR='hm_grammar';
+const BUILTIN_GRAMMAR = [
+  {lesson:1,title:'입니다 — Нэр өгүүлэхүүн',rule:'Нэр үгийн ард залгаж «А бол Б» гэсэн утга илэрхийлнэ. Хүндэтгэлийн хэлбэр.',examples:[{ko:'학생입니다.',mn:'Оюутан.'},{ko:'몽골 사람입니다.',mn:'Монгол хүн.'}]},
+  {lesson:1,title:'입니까 — Асуух хэлбэр',rule:'입니다-г асуулт болгосон хэлбэр.',examples:[{ko:'학생입니까?',mn:'Оюутан уу?'},{ko:'몽골 사람입니까?',mn:'Монгол хүн үү?'}]},
+  {lesson:1,title:'은/는 — Сэдэв заах туслах үг',rule:'Өгүүлбэрийн сэдвийг тодотгоно. Эгшгээр төгссөн үгэнд 는, гийгүүлэгчээр төгссөн үгэнд 은.',examples:[{ko:'저는 바야르입니다.',mn:'Намайг Баяр гэдэг.'},{ko:'선생님은 한국 사람입니다.',mn:'Багш солонгос хүн.'}]},
+  {lesson:2,title:'여기·거기·저기 — Газар заах',rule:'여기 = энд (яригчид ойр), 거기 = наана чинь, 저기 = тэнд (хоёуланд хол).',examples:[{ko:'여기는 도서관입니다.',mn:'Энэ бол номын сан.'}]},
+  {lesson:2,title:'이것·그것·저것 — Юм заах',rule:'이것 = энэ юм, 그것 = наадах юм, 저것 = тэр юм.',examples:[{ko:'이것은 책입니다.',mn:'Энэ бол ном.'}]},
+  {lesson:2,title:'이/가 — Нэрлэхийн тийн ялгал',rule:'Өгүүлбэрийн эзэн бие заана. Эгшгээр төгссөн үгэнд 가, гийгүүлэгчээр төгссөн үгэнд 이.',examples:[{ko:'책이 있습니다.',mn:'Ном байгаа.'},{ko:'시계가 있습니다.',mn:'Цаг байна.'}]},
+  {lesson:2,title:'에 있습니다/없습니다',rule:'Орон байр заана (-д/-т байгаа / байхгүй).',examples:[{ko:'교실에 컴퓨터가 있습니까?',mn:'Ангид компьютер байгаа юу?'},{ko:'아니요, 없습니다.',mn:'Үгүй, байхгүй.'}]},
+  {lesson:2,title:'이/가 아닙니다 — «биш»',rule:'Нэр үгийн ард залгаж үгүйсгэл илэрхийлнэ.',examples:[{ko:'사전이 아닙니다. 책입니다.',mn:'Толь бичиг биш. Ном.'}]},
+  {lesson:3,title:'-ㅂ니다/습니다 — Одоо цаг',rule:'Үйл үгийн хүүрнэх хэлбэр. Эгшгээр төгссөн үндсэнд -ㅂ니다, гийгүүлэгчээр төгссөн үндсэнд -습니다.',examples:[{ko:'갑니다.',mn:'Явж байна.'},{ko:'먹습니다.',mn:'Идэж байна.'},{ko:'학생이 공부합니다.',mn:'Оюутан хичээл хийж байна.'}]},
+  {lesson:3,title:'-ㅂ니까/습니까 — Асуух хэлбэр',rule:'Үйл үгийн асуух хэлбэр.',examples:[{ko:'지원 씨가 일합니까?',mn:'Живон ажиллаж байна уу?'},{ko:'가방이 큽니까?',mn:'Цүнх том уу?'}]},
+  {lesson:3,title:'을/를 — Заахын тийн ялгал',rule:'Тусагдахуун заана (-ыг/-ийг/-г). Эгшгээр төгссөн үгэнд 를, гийгүүлэгчээр төгссөн үгэнд 을.',examples:[{ko:'빵을 먹습니다.',mn:'Талх идэж байна.'},{ko:'친구를 만납니다.',mn:'Найзтайгаа уулзаж байна.'}]},
+  {lesson:3,title:'에서 — Үйлдэл болж буй газар',rule:'Үйлдэл хийж буй газрыг заана. ⚠️ 에 (байгаа газар) vs 에서 (үйлдлийн газар).',examples:[{ko:'집에서 쉽니다.',mn:'Гэртээ амарч байна.'},{ko:'은행에서 일합니다.',mn:'Банкинд ажилладаг.'}]},
+];
+let grammarCards = JSON.parse(localStorage.getItem(K_GRAMMAR)||'[]');
+
+function allGrammar(){ return BUILTIN_GRAMMAR.concat(grammarCards); }
+
+function renderGrammar(){
+  const all=allGrammar();
+  $('grammarMeta').textContent=all.length+' дүрэм';
+  const list=$('grammarList'); list.innerHTML='';
+  if(!all.length){ list.innerHTML='<div class="grammar-empty">Дүрэм байхгүй байна.</div>'; return; }
+  // group by lesson
+  const byLesson={};
+  all.forEach(g=>{ const k='Хичээл '+g.lesson; (byLesson[k]=byLesson[k]||[]).push(g); });
+  Object.entries(byLesson).forEach(([lbl,rules])=>{
+    const sec=document.createElement('div');
+    sec.innerHTML=`<div class="section-label">${esc(lbl)}</div>`;
+    rules.forEach(g=>{
+      const card=document.createElement('div'); card.className='grammar-card';
+      const exHtml=g.examples.map(e=>`<div class="g-ex"><span class="ko">${esc(e.ko)}</span><span class="mn">${esc(e.mn)}</span></div>`).join('');
+      card.innerHTML=`<div class="g-lesson">Хичээл ${g.lesson}</div><div class="g-title">${esc(g.title)}</div><div class="g-rule">${esc(g.rule)}</div><div class="g-examples">${exHtml}</div>`;
+      sec.appendChild(card);
+    });
+    list.appendChild(sec);
+  });
+}
+
+$('btnGrammar').onclick=()=>{ renderGrammar(); show('scrGrammar'); };
+$('btnGrammarBack').onclick=()=>{ show('scrHome'); };
+
+/* grammar import tab */
+$('tabWords').onclick=()=>{
+  $('tabWords').classList.add('on'); $('tabGrammarImp').classList.remove('on');
+  $('paneWords').style.display=''; $('paneGrammarImp').style.display='none';
+};
+$('tabGrammarImp').onclick=()=>{
+  $('tabGrammarImp').classList.add('on'); $('tabWords').classList.remove('on');
+  $('paneGrammarImp').style.display=''; $('paneWords').style.display='none';
+};
+$('grammarImpText').oninput=()=>{
+  const v=$('grammarImpText').value.trim();
+  $('grammarImpErr').style.display='none';
+  try{ const a=JSON.parse(v); $('grammarImpOk').disabled=!Array.isArray(a)||!a.length; }
+  catch(e){ $('grammarImpOk').disabled=true; }
+};
+$('grammarImpCancel').onclick=()=>$('modalBg').classList.remove('show');
+$('grammarImpOk').onclick=()=>{
+  try{
+    const arr=JSON.parse($('grammarImpText').value);
+    if(!Array.isArray(arr)) throw new Error('Array биш байна');
+    const existing=new Set(grammarCards.map(g=>g.lesson+'|'+g.title));
+    let added=0;
+    arr.forEach(g=>{
+      if(!g.lesson||!g.title||!g.rule) throw new Error('"lesson","title","rule" талбар заавал байна');
+      g.examples=g.examples||[];
+      const key=g.lesson+'|'+g.title;
+      if(!existing.has(key)){ grammarCards.push(g); existing.add(key); added++; }
+    });
+    localStorage.setItem(K_GRAMMAR,JSON.stringify(grammarCards));
+    $('modalBg').classList.remove('show');
+    $('grammarImpText').value='';
+    toast(`${added} дүрэм нэмэгдлээ`);
+  } catch(e){
+    $('grammarImpErr').textContent='JSON алдаа: '+e.message;
+    $('grammarImpErr').style.display='block';
+  }
+};
 
 /* ---------- import modal ---------- */
 let termDelim='comma', cardDelim='newline';
