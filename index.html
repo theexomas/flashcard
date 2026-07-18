@@ -654,12 +654,16 @@ function answer(btn,ok,c,correctAns){
   grade(cardId(c), ok?4:1);
   if(ok)session.correct++; else session.missed.push(c);
   if(settings.dir==='mn2ko') speak(c.ko);
-  const nb=document.createElement('button');
-  nb.className='big-btn '+(ok?'primary':'ghost');
-  nb.textContent = session.ix+1<session.cards.length?'Дараах →':'Дүн харах';
-  nb.onclick=()=>{ session.ix++; session.ix<session.cards.length?renderQ():renderResults(); };
-  $('nextRow').appendChild(nb);
-  nb.focus();
+  if(ok){
+    setTimeout(()=>{ session.ix++; session.ix<session.cards.length?renderQ():renderResults(); }, 600);
+  } else {
+    const nb=document.createElement('button');
+    nb.className='big-btn ghost';
+    nb.textContent = session.ix+1<session.cards.length?'Дараах →':'Дүн харах';
+    nb.onclick=()=>{ session.ix++; session.ix<session.cards.length?renderQ():renderResults(); };
+    $('nextRow').appendChild(nb);
+    nb.focus();
+  }
 }
 
 function renderResults(){
