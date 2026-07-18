@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한몽 카드 · Солонгос үг сурах</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Noto+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0d1017;
+  --panel:#161b26;
+  --panel-2:#1d2432;
+  --line:#28303f;
+  --text:#e8ecf4;
+  --muted:#8b95a8;
+  --red:#e5484d;      /* taegeuk red — KO→MN */
+  --blue:#4c8dff;     /* taegeuk blue — MN→KO */
+  --green:#3dd68c;
+  --amber:#f0b429;
+  --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:"Noto Sans","Noto Sans KR",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.ko{font-family:"Noto Sans KR","Noto Sans",sans-serif}
+.wrap{max-width:520px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.logo{font-family:"Noto Sans KR";font-weight:900;font-size:22px;letter-spacing:-.5px}
+.logo em{font-style:normal;color:var(--red)}
+.hbtns{display:flex;gap:8px}
+.icon-btn{
+  background:var(--panel);border:1px solid var(--line);color:var(--text);
+  width:40px;height:40px;border-radius:12px;font-size:17px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.icon-btn:hover{background:var(--panel-2)}
+
+/* ---------- home ---------- */
+.due-hero{
+  background:linear-gradient(145deg,var(--panel) 0%,var(--panel-2) 100%);
+  border:1px solid var(--line);border-radius:var(--radius);
+  padding:22px 20px;margin-bottom:14px;display:flex;align-items:center;gap:18px;
+}
+.due-ring{
+  width:84px;height:84px;border-radius:50%;flex-shrink:0;position:relative;
+  display:flex;align-items:center;justify-content:center;
+}
+.due-ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.due-num{font-size:26px;font-weight:800}
+.due-info h2{font-size:16px;margin-bottom:4px}
+.due-info p{font-size:13px;color:var(--muted);line-height:1.5}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 10px;text-align:center}
+.stat b{display:block;font-size:20px;font-weight:800}
+.stat span{font-size:11.5px;color:var(--muted)}
+.stat.new b{color:var(--blue)}
+.stat.learning b{color:var(--amber)}
+.stat.done b{color:var(--green)}
+
+.section-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 8px}
+
+/* direction toggle — taegeuk pill */
+.dir-toggle{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.dir-toggle button{
+  flex:1;padding:12px 8px;background:transparent;border:0;color:var(--muted);
+  font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;
+}
+.dir-toggle button.active-ko{background:rgba(229,72,77,.16);color:#ff8a8e}
+.dir-toggle button.active-mn{background:rgba(76,141,255,.16);color:#8ab4ff}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  padding:8px 14px;border-radius:999px;border:1px solid var(--line);
+  background:var(--panel);color:var(--muted);font-size:13px;font-weight:600;
+  cursor:pointer;font-family:inherit;
+}
+.chip.on{background:rgba(61,214,140,.14);border-color:rgba(61,214,140,.5);color:var(--green)}
+select.cat{
+  width:100%;padding:12px;border-radius:12px;background:var(--panel);
+  border:1px solid var(--line);color:var(--text);font-family:inherit;font-size:14px;
+}
+.big-btn{
+  width:100%;padding:16px;border-radius:14px;border:0;font-family:inherit;
+  font-size:16px;font-weight:800;cursor:pointer;margin-top:10px;
+}
+.big-btn.primary{background:var(--red);color:#fff}
+.big-btn.primary:disabled{background:var(--panel-2);color:var(--muted);cursor:default}
+.big-btn.ghost{background:var(--panel);border:1px solid var(--line);color:var(--text)}
+.hint{font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.55;text-align:center}
+
+/* ---------- quiz ---------- */
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.progress{flex:1;height:8px;background:var(--panel);border-radius:99px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--green);border-radius:99px;transition:width .25s}
+.counter{font-size:13px;color:var(--muted);font-weight:600;min-width:44px;text-align:right}
+.qcard{
+  background:linear-gradient(145deg,var(--panel),var(--panel-2));
+  border:1px solid var(--line);border-radius:var(--radius);
+  padding:34px 20px;text-align:center;margin-bottom:16px;position:relative;
+}
+.qcard .tag{font-size:11.5px;color:var(--muted);letter-spacing:.05em;margin-bottom:12px}
+.qcard .term{font-size:34px;font-weight:900;line-height:1.25;word-break:keep-all}
+.qcard .term.mn-term{font-size:24px;font-weight:800}
+.speak{
+  position:absolute;top:12px;right:12px;background:transparent;border:0;
+  font-size:20px;cursor:pointer;opacity:.75;
+}
+.opts{display:grid;gap:10px}
+.opt{
+  padding:15px 16px;border-radius:14px;border:1px solid var(--line);
+  background:var(--panel);color:var(--text);font-family:inherit;font-size:16.5px;
+  font-weight:600;cursor:pointer;text-align:left;transition:.12s;word-break:keep-all;
+}
+.opt:hover{background:var(--panel-2)}
+.opt.correct{background:rgba(61,214,140,.16);border-color:var(--green);color:var(--green)}
+.opt.wrong{background:rgba(229,72,77,.16);border-color:var(--red);color:#ff8a8e}
+.opt:disabled{cursor:default}
+.next-row{margin-top:16px;min-height:56px}
+.quit{background:transparent;border:0;color:var(--muted);font-family:inherit;font-size:13px;cursor:pointer;margin-top:18px;width:100%}
+
+/* ---------- results ---------- */
+.score-hero{text-align:center;padding:30px 0 10px}
+.score-hero .pct{font-size:56px;font-weight:900}
+.score-hero p{color:var(--muted);font-size:14px;margin-top:4px}
+.missed{margin-top:18px}
+.missed-item{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:12px 14px;margin-bottom:8px;
+}
+.missed-item .k{font-weight:800;font-size:16px}
+.missed-item .m{color:var(--muted);font-size:13.5px;text-align:right;flex:1}
+.missed-item button{background:transparent;border:0;font-size:17px;cursor:pointer}
+
+/* ---------- modal (import) ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(5,8,14,.75);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.modal-bg.show{display:flex}
+.modal{
+  background:var(--panel);border:1px solid var(--line);border-radius:20px 20px 0 0;
+  width:100%;max-width:560px;max-height:88vh;overflow-y:auto;padding:20px 18px 28px;
+}
+@media(min-width:600px){.modal-bg{align-items:center}.modal{border-radius:20px}}
+.modal h3{font-size:17px;margin-bottom:4px}
+.modal .sub{font-size:12.5px;color:var(--muted);margin-bottom:14px;line-height:1.5}
+.modal textarea{
+  width:100%;min-height:120px;background:var(--bg);border:1px solid var(--line);
+  border-radius:12px;color:var(--text);font-family:inherit;font-size:14px;padding:12px;resize:vertical;
+}
+.modal h4{font-size:12.5px;color:var(--muted);margin:14px 0 6px;font-weight:600}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg button,.seg input{
+  padding:8px 13px;border-radius:10px;border:1px solid var(--line);background:var(--bg);
+  color:var(--muted);font-family:inherit;font-size:13px;cursor:pointer;
+}
+.seg button.on{border-color:var(--blue);color:#8ab4ff;background:rgba(76,141,255,.12)}
+.seg input{width:90px;color:var(--text)}
+.preview{margin-top:14px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;max-height:160px;overflow-y:auto}
+.preview .row{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:5px 0;border-bottom:1px solid var(--line)}
+.preview .row:last-child{border-bottom:0}
+.preview .row span:last-child{color:var(--muted);text-align:right}
+.preview .empty{color:var(--muted);font-size:13px;text-align:center;padding:8px 0}
+.check{display:flex;align-items:center;gap:9px;margin-top:14px;font-size:13.5px;color:var(--muted);cursor:pointer}
+.modal-actions{display:flex;gap:10px;margin-top:16px}
+.modal-actions button{flex:1;padding:13px;border-radius:12px;font-family:inherit;font-weight:700;font-size:14.5px;cursor:pointer}
+.m-cancel{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.m-ok{background:var(--blue);border:0;color:#fff}
+.m-ok:disabled{background:var(--panel-2);color:var(--muted)}
+/* ---------- sync / auth ---------- */
+.sync-dot{
+  position:absolute;top:6px;right:6px;width:9px;height:9px;border-radius:50%;
+  background:var(--muted);border:2px solid var(--panel);display:none;
+}
+.sync-dot.on{display:block}
+.sync-dot.ok{background:var(--green)}
+.sync-dot.busy{background:var(--amber)}
+.sync-dot.err{background:var(--red)}
+.auth-field{
+  width:100%;padding:13px;border-radius:12px;background:var(--bg);
+  border:1px solid var(--line);color:var(--text);font-family:inherit;font-size:14.5px;margin-bottom:10px;
+}
+.auth-msg{font-size:13px;min-height:18px;margin-top:4px;line-height:1.5}
+.auth-msg.err{color:#ff8a8e}
+.auth-msg.ok{color:var(--green)}
+.auth-user{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+}
+.auth-user span{font-size:14px;word-break:break-all}
+.auth-user button{
+  background:transparent;border:1px solid var(--line);color:var(--muted);
+  padding:8px 14px;border-radius:10px;font-family:inherit;font-size:13px;cursor:pointer;flex-shrink:0;
+}
+.toast{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+  background:var(--panel-2);border:1px solid var(--line);color:var(--text);
+  padding:11px 18px;border-radius:12px;font-size:13.5px;z-index:60;
+  opacity:0;pointer-events:none;transition:opacity .25s;white-space:nowrap;
+}
+.toast.show{opacity:1}
+.screen{display:none}
+.screen.show{display:block}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="logo ko">한몽 <em>카드</em></div>
+  <div class="hbtns">
+    <button class="icon-btn" id="btnImport" title="Өөрийн үг оруулах">📥</button>
+    <button class="icon-btn" id="btnAccount" title="Бүртгэл ба синк" style="position:relative">
+      👤<span class="sync-dot" id="syncDot"></span>
+    </button>
+  </div>
+</header>
+
+<!-- ============ HOME ============ -->
+<div class="screen show" id="scrHome">
+
+  <div class="due-hero">
+    <div class="due-ring">
+      <svg width="84" height="84" viewBox="0 0 84 84">
+        <circle cx="42" cy="42" r="37" fill="none" stroke="#28303f" stroke-width="7"/>
+        <circle id="ringFg" cx="42" cy="42" r="37" fill="none" stroke="#3dd68c" stroke-width="7"
+                stroke-linecap="round" stroke-dasharray="232.5" stroke-dashoffset="232.5"/>
+      </svg>
+      <div class="due-num" id="dueNum">0</div>
+    </div>
+    <div class="due-info">
+      <h2>Өнөөдөр давтах карт</h2>
+      <p id="dueDesc">Давталтын цаг болсон болон шинэ үгс энд цуглана.</p>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat new"><b id="stNew">0</b><span>Шинэ</span></div>
+    <div class="stat learning"><b id="stLearn">0</b><span>Сурч буй</span></div>
+    <div class="stat done"><b id="stDone">0</b><span>Сурсан</span></div>
+  </div>
+
+  <div class="section-label">Чиглэл</div>
+  <div class="dir-toggle" id="dirToggle">
+    <button data-dir="ko2mn" class="ko">한국어 → Монгол</button>
+    <button data-dir="mn2ko">Монгол → 한국어</button>
+  </div>
+
+  <div class="section-label">Хичээл</div>
+  <div class="chips" id="lessonChips"></div>
+
+  <div class="section-label">Ангилал</div>
+  <select class="cat" id="catSelect"><option value="">Бүх ангилал</option></select>
+
+  <button class="big-btn primary" id="btnReview">Давталт эхлүүлэх</button>
+  <button class="big-btn ghost" id="btnPractice">Чөлөөт дасгал (SRS-гүй сонголтоос)</button>
+  <p class="hint">Давталт: SM-2 алгоритмаар зөв хариулсан үгийн интервал уртсаж, алдсан үг дахин ойртоно. Чөлөөт дасгал ч гэсэн давталтын хуваарьт тооцогдоно.</p>
+</div>
+
+<!-- ============ QUIZ ============ -->
+<div class="screen" id="scrQuiz">
+  <div class="topbar">
+    <div class="progress"><i id="progFill"></i></div>
+    <div class="counter" id="counter">0/0</div>
+  </div>
+  <div class="qcard">
+    <button class="speak" id="btnSpeak" title="Сонсох">🔊</button>
+    <div class="tag" id="qTag"></div>
+    <div class="term" id="qTerm"></div>
+  </div>
+  <div class="opts" id="opts"></div>
+  <div class="next-row" id="nextRow"></div>
+  <button class="quit" id="btnQuit">Гарах — явц хадгалагдана</button>
+</div>
+
+<!-- ============ RESULTS ============ -->
+<div class="screen" id="scrResults">
+  <div class="score-hero">
+    <div class="pct" id="scorePct">0%</div>
+    <p id="scoreDesc"></p>
+  </div>
+  <div class="missed" id="missedWrap">
+    <div class="section-label">Алдсан үгс — маргааш дахин гарна</div>
+    <div id="missedList"></div>
+  </div>
+  <button class="big-btn primary" id="btnAgain">Дараагийн давталт</button>
+  <button class="big-btn ghost" id="btnHome">Нүүр хуудас</button>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- ============ IMPORT MODAL ============ -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3>Өөрийн үг оруулах</h3>
+    <p class="sub">Word/Excel/Google Docs-оос хуулж буулгана уу. «Үг,Тайлбар» эсвэл «Үг [Tab] Тайлбар» хэлбэр, мөн хуучин «이모지 Тайлбар • дуудлага» формат хоёулаа танигдана.</p>
+    <textarea id="impText" placeholder="안녕하세요,Сайн байна уу?&#10;감사합니다,Баярлалаа"></textarea>
+    <h4>Үг ба тайлбарын хооронд</h4>
+    <div class="seg" id="segTerm">
+      <button data-v="tab">Tab</button>
+      <button data-v="comma" class="on">Comma</button>
+      <input id="termCustom" placeholder="Өөр тэмдэгт">
+    </div>
+    <h4>Карт бүрийн хооронд</h4>
+    <div class="seg" id="segCard">
+      <button data-v="newline" class="on">New line</button>
+      <button data-v="semicolon">Semicolon</button>
+      <input id="cardCustom" placeholder="Өөр тэмдэгт">
+    </div>
+    <h4>Preview — <span id="pvCount">0</span> карт</h4>
+    <div class="preview" id="pvBox"><div class="empty">Одоогоор урьдчилан харах зүйл алга.</div></div>
+    <label class="check"><input type="checkbox" id="impAppend" checked> Одоогийн оруулсан үгсэд нэмэх (сонгохгүй бол оруулсан үгсийг бүрэн солино — номын 146 үгэнд нөлөөлөхгүй)</label>
+    <div class="modal-actions">
+      <button class="m-cancel" id="impCancel">Cancel</button>
+      <button class="m-ok" id="impOk" disabled>Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ AUTH MODAL ============ -->
+<div class="modal-bg" id="authBg">
+  <div class="modal">
+    <h3>Бүртгэл ба синк</h3>
+    <p class="sub" id="authSub">Нэвтэрснээр давталтын явц, оруулсан үгс чинь бүх төхөөрөмж дээр хадгалагдана.</p>
+    <div id="authForm">
+      <input class="auth-field" id="authEmail" type="email" placeholder="И-мэйл" autocomplete="email">
+      <input class="auth-field" id="authPass" type="password" placeholder="Нууц үг (6+ тэмдэгт)" autocomplete="current-password">
+      <div class="auth-msg" id="authMsg"></div>
+      <div class="modal-actions">
+        <button class="m-cancel" id="authSignup">Бүртгүүлэх</button>
+        <button class="m-ok" id="authLogin">Нэвтрэх</button>
+      </div>
+    </div>
+    <div id="authLogged" style="display:none">
+      <div class="auth-user">
+        <span id="authWho"></span>
+        <button id="authLogout">Гарах</button>
+      </div>
+      <div class="auth-msg ok" id="authSyncInfo" style="margin-top:10px"></div>
+    </div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="m-cancel" id="authClose" style="flex:1">Хаах</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================
+   한몽 카드 v2 — SM-2 spaced repetition edition
+   ===================================================== */
+
+/* ---------- built-in deck: Хичээл 1–3 (х.31–84) ---------- */
+const BUILTIN = [
+// Хичээл 1 — Улс
+["한국","Солонгос","Улс (나라)",1],["몽골","Монгол","Улс (나라)",1],["러시아","Орос","Улс (나라)",1],
+["중국","Хятад","Улс (나라)",1],["태국","Тайланд","Улс (나라)",1],["말레이시아","Малайз","Улс (나라)",1],
+["일본","Япон","Улс (나라)",1],["미국","Америк","Улс (나라)",1],["베트남","Вьетнам","Улс (나라)",1],
+["호주","Австрали","Улс (나라)",1],["인도네시아","Индонези","Улс (나라)",1],["필리핀","Филиппин","Улс (나라)",1],
+["인도","Энэтхэг","Улс (나라)",1],["영국","Англи","Улс (나라)",1],["독일","Герман","Улс (나라)",1],
+["프랑스","Франц","Улс (나라)",1],
+// Хичээл 1 — Мэргэжил
+["학생","сурагч, оюутан","Мэргэжил (직업)",1],["회사원","компанийн ажилтан","Мэргэжил (직업)",1],
+["의사","эмч","Мэргэжил (직업)",1],["공무원","төрийн албан хаагч","Мэргэжил (직업)",1],
+["관광 가이드","аяллын хөтөч","Мэргэжил (직업)",1],["약사","эм зүйч","Мэргэжил (직업)",1],
+["소방관","гал сөнөөгч","Мэргэжил (직업)",1],["은행원","банкны ажилтан","Мэргэжил (직업)",1],
+["선생님","багш","Мэргэжил (직업)",1],["주부","гэрийн эзэгтэй","Мэргэжил (직업)",1],
+["운전기사","жолооч","Мэргэжил (직업)",1],
+// Хичээл 1 — Мэндчилгээ
+["안녕하세요?","Сайн байна уу?","Мэндчилгээ (인사말)",1],
+["안녕하십니까?","Сайн байна уу? (илүү хүндэтгэлтэй)","Мэндчилгээ (인사말)",1],
+["안녕히 가세요.","Баяртай. (явж буй хүнд)","Мэндчилгээ (인사말)",1],
+["안녕히 계세요.","Баяртай. (үлдэж буй хүнд)","Мэндчилгээ (인사말)",1],
+["처음 뵙겠습니다.","Танилцсандаа баяртай байна.","Мэндчилгээ (인사말)",1],
+["반갑습니다.","(Уулзсандаа) баяртай байна.","Мэндчилгээ (인사말)",1],
+// Хичээл 1 — Шинэ үг
+["국어국문학과","хэл, уран зохиолын анги","Шинэ үг",1],["아니요","үгүй","Шинэ үг",1],
+["직업","мэргэжил","Шинэ үг",1],["국적","иргэний харьяалал","Шинэ үг",1],
+["은행","банк","Шинэ үг",1],["학과","анги, тэнхим","Шинэ үг",1],
+["네","тийм","Шинэ үг",1],["이름","нэр","Шинэ үг",1],["학번","оюутны дугаар","Шинэ үг",1],
+["대학교","их сургууль","Шинэ үг",1],["이메일","и-мэйл, цахим шуудан","Шинэ үг",1],
+["학생증","оюутны үнэмлэх","Шинэ үг",1],["대학생","оюутан","Шинэ үг",1],
+["저","би (даруу хэлбэр)","Шинэ үг",1],["한국어","солонгос хэл","Шинэ үг",1],
+["전화","утас","Шинэ үг",1],["한국어과","солонгос хэлний анги","Шинэ үг",1],
+["사람","хүн","Шинэ үг",1],["제","миний (даруу хэлбэр)","Шинэ үг",1],
+["씨","(нэрний ард залгах хүндэтгэлийн үг)","Шинэ үг",1],["주소","хаяг","Шинэ үг",1],
+// Хичээл 2 — Газар
+["학교","сургууль","Газар (장소)",2],["도서관","номын сан","Газар (장소)",2],
+["식당","цайны газар, гуанз","Газар (장소)",2],["미용실","үсчин","Газар (장소)",2],
+["극장","кинотеатр","Газар (장소)",2],["우체국","шуудан холбоо","Газар (장소)",2],
+["병원","эмнэлэг","Газар (장소)",2],["백화점","их дэлгүүр","Газар (장소)",2],
+["경찰서","цагдаагийн газар","Газар (장소)",2],["과일 가게","жимсний дэлгүүр","Газар (장소)",2],
+["사무실","албан өрөө","Газар (장소)",2],
+// Хичээл 2 — Сургуулийн байгууламж
+["강의실","хичээлийн танхим","Сургуулийн байгууламж (학교 시설)",2],
+["교실","анги, танхим","Сургуулийн байгууламж (학교 시설)",2],
+["휴게실","амралтын өрөө","Сургуулийн байгууламж (학교 시설)",2],
+["어학실(랩실)","лингафоны танхим","Сургуулийн байгууламж (학교 시설)",2],
+["동아리방","дугуйлангийн өрөө","Сургуулийн байгууламж (학교 시설)",2],
+["체육관","биеийн тамирын зал","Сургуулийн байгууламж (학교 시설)",2],
+["운동장","спорт талбай","Сургуулийн байгууламж (학교 시설)",2],
+["강당","их танхим (лекцийн)","Сургуулийн байгууламж (학교 시설)",2],
+["학생 식당","оюутны гуанз","Сургуулийн байгууламж (학교 시설)",2],
+["세미나실","семинарын өрөө","Сургуулийн байгууламж (학교 시설)",2],
+["서점","номын дэлгүүр","Сургуулийн байгууламж (학교 시설)",2],
+// Хичээл 2 — Ангийн эд зүйлс
+["책상","ширээ","Ангийн эд зүйлс (교실 물건)",2],["의자","сандал","Ангийн эд зүйлс (교실 물건)",2],
+["칠판","самбар","Ангийн эд зүйлс (교실 물건)",2],["문","хаалга","Ангийн эд зүйлс (교실 물건)",2],
+["창문","цонх","Ангийн эд зүйлс (교실 물건)",2],["시계","цаг","Ангийн эд зүйлс (교실 물건)",2],
+["가방","цүнх","Ангийн эд зүйлс (교실 물건)",2],["컴퓨터","компьютер","Ангийн эд зүйлс (교실 물건)",2],
+["지도","газрын зураг","Ангийн эд зүйлс (교실 물건)",2],["펜","үзэг","Ангийн эд зүйлс (교실 물건)",2],
+["필통","үзэгний сав","Ангийн эд зүйлс (교실 물건)",2],["지우개","баллуур","Ангийн эд зүйлс (교실 물건)",2],
+["책","ном","Ангийн эд зүйлс (교실 물건)",2],["공책","дэвтэр","Ангийн эд зүйлс (교실 물건)",2],
+["사전","толь бичиг","Ангийн эд зүйлс (교실 물건)",2],
+// Хичээл 2 — Шинэ үг
+["여기","энд, энэ газар","Шинэ үг",2],["거기","наана, наад газар","Шинэ үг",2],
+["저기","тэнд, тэр газар","Шинэ үг",2],["이것","энэ (зүйл)","Шинэ үг",2],
+["그것","наадах (зүйл)","Шинэ үг",2],["저것","тэр (зүйл)","Шинэ үг",2],
+["있다","байх","Шинэ үг",2],["없다","байхгүй байх","Шинэ үг",2],
+["무엇","юу","Шинэ үг",2],["어디","хаана","Шинэ үг",2],
+["가게","дэлгүүр","Шинэ үг",2],["약국","эмийн сан","Шинэ үг",2],
+["라디오","радио","Шинэ үг",2],["텔레비전","телевизор","Шинэ үг",2],
+["휴대전화","гар утас","Шинэ үг",2],["많이","их, ихээр","Шинэ үг",2],
+["화장실","ариун цэврийн өрөө","Шинэ үг",2],["명동","Мёндун (Сөүлийн дүүрэг)","Шинэ үг",2],
+// Хичээл 3 — Үйл үг
+["가다","явах","Үйл үг (동사)",3],["오다","ирэх","Үйл үг (동사)",3],["자다","унтах","Үйл үг (동사)",3],
+["먹다","идэх","Үйл үг (동사)",3],["마시다","уух","Үйл үг (동사)",3],
+["이야기하다","ярих, яриа өрнүүлэх","Үйл үг (동사)",3],["읽다","унших","Үйл үг (동사)",3],
+["듣다","сонсох","Үйл үг (동사)",3],["보다","харах, үзэх","Үйл үг (동사)",3],
+["일하다","ажиллах","Үйл үг (동사)",3],["공부하다","хичээл хийх, суралцах","Үйл үг (동사)",3],
+["운동하다","биеийн тамир хийх","Үйл үг (동사)",3],["쉬다","амрах","Үйл үг (동사)",3],
+["만나다","уулзах","Үйл үг (동사)",3],["사다","худалдаж авах","Үйл үг (동사)",3],
+["좋아하다","дуртай байх","Үйл үг (동사)",3],
+// Хичээл 3 — Тэмдэг үйл үг
+["크다","том","Тэмдэг үйл үг (형용사)",3],["작다","жижиг","Тэмдэг үйл үг (형용사)",3],
+["적다","бага, цөөн","Тэмдэг үйл үг (형용사)",3],["재미있다","сонирхолтой","Тэмдэг үйл үг (형용사)",3],
+["재미없다","сонирхолгүй","Тэмдэг үйл үг (형용사)",3],["좋다","сайн, сайхан","Тэмдэг үйл үг (형용사)",3],
+["많다","их, олон","Тэмдэг үйл үг (형용사)",3],["나쁘다","муу, муухай","Тэмдэг үйл үг (형용사)",3],
+// Хичээл 3 — Өдөр тутмын үгс
+["차","машин","Өдөр тутмын үгс",3],["커피","кофе","Өдөр тутмын үгс",3],
+["빵","талх","Өдөр тутмын үгс",3],["우유","сүү","Өдөр тутмын үгс",3],
+["영화","кино","Өдөр тутмын үгс",3],["음악","хөгжим","Өдөр тутмын үгс",3],
+["신문","сонин","Өдөр тутмын үгс",3],["친구","найз","Өдөр тутмын үгс",3],
+// Хичээл 3 — Асуух үг
+["누구","хэн","Асуух үг (의문대명사)",3],["언제","хэзээ","Асуух үг (의문대명사)",3]
+];
+
+/* ---------- Supabase config — ЭНД ӨӨРИЙН УТГУУДАА ТАВЬ ---------- */
+const SUPABASE_URL      = 'PASTE_YOUR_SUPABASE_URL';       // ж: https://abcdefgh.supabase.co
+const SUPABASE_ANON_KEY = 'PASTE_YOUR_SUPABASE_ANON_KEY';  // Settings → API → anon public
+
+/* ---------- storage ---------- */
+const K_CUSTOM='hmk_custom_v2', K_SRS='hmk_srs_v2', K_SET='hmk_settings_v2', K_MIG='hmk_migrated_v2';
+const load=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v??d}catch(e){return d}};
+const save=(k,v)=>{
+  localStorage.setItem(k,JSON.stringify(v));
+  if([K_CUSTOM,K_SRS,K_SET].includes(k)) cloudScheduleSave();
+};
+
+let customCards = load(K_CUSTOM,[]);          // [{ko,mn,category,lesson:'import'}]
+let srs        = load(K_SRS,{});              // id -> {reps,int,ease,due,lapses}
+let settings   = load(K_SET,{dir:'ko2mn',lessons:[1,2,3,'import'],cat:''});
+
+const cardId = c => c.ko+'⁄'+c.mn;
+function allCards(){
+  const b = BUILTIN.map(a=>({ko:a[0],mn:a[1],category:a[2],lesson:a[3]}));
+  return b.concat(customCards);
+}
+
+/* ---------- migrate old-version decks (v1 keys unknown → scan) ---------- */
+(function migrate(){
+  if(load(K_MIG,false)) return;
+  const found=[];
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if([K_CUSTOM,K_SRS,K_SET,K_MIG].includes(key)) continue;
+    try{
+      const v=JSON.parse(localStorage.getItem(key));
+      const arr=Array.isArray(v)?v:(v&&Array.isArray(v.cards)?v.cards:null);
+      if(!arr) continue;
+      arr.forEach(o=>{
+        if(!o||typeof o!=='object') return;
+        const ko=o.term||o.ko||o.word||o.front;
+        const mn=o.definition||o.mn||o.meaning||o.back;
+        if(typeof ko==='string'&&typeof mn==='string'&&ko.trim()&&mn.trim())
+          found.push({ko:ko.trim(),mn:mn.trim(),category:'Импорт',lesson:'import'});
+      });
+    }catch(e){}
+  }
+  if(found.length){
+    const ids=new Set(allCards().map(cardId));
+    const fresh=found.filter(c=>!ids.has(cardId(c)));
+    if(fresh.length){customCards=customCards.concat(fresh);save(K_CUSTOM,customCards);
+      setTimeout(()=>toast(`Хуучин хувилбараас ${fresh.length} карт сэргээгдлээ`),600);}
+  }
+  save(K_MIG,true);
+})();
+
+/* ---------- SM-2 ---------- */
+const DAY=86400000;
+function getState(id){return srs[id]||{reps:0,int:0,ease:2.5,due:0,lapses:0}}
+function grade(id,q){ // q: 4 = зөв, 1 = буруу
+  const s=getState(id);
+  if(q>=3){
+    s.reps++;
+    s.int = s.reps===1?1 : s.reps===2?3 : Math.round(s.int*s.ease);
+    s.ease = Math.max(1.3, s.ease + 0.1-(5-q)*(0.08+(5-q)*0.02));
+    s.due = Date.now()+s.int*DAY;
+  }else{
+    s.reps=0; s.int=0; s.lapses++;
+    s.due = Date.now()+10*60*1000; // 10 мин дараа — өнөөдөртөө дахин
+  }
+  srs[id]=s; save(K_SRS,srs);
+}
+const isNew   = c => !srs[cardId(c)] || srs[cardId(c)].reps===0 && !srs[cardId(c)].lapses;
+const isDue   = c => { const s=srs[cardId(c)]; return !s || s.due<=Date.now(); };
+const isDone  = c => { const s=srs[cardId(c)]; return s && s.int>=21; };
+
+/* ---------- filters ---------- */
+function filtered(){
+  return allCards().filter(c=>
+    settings.lessons.includes(c.lesson) &&
+    (!settings.cat || c.category===settings.cat));
+}
+
+/* ---------- home render ---------- */
+const $=id=>document.getElementById(id);
+function renderHome(){
+  const cards=filtered();
+  const due=cards.filter(isDue);
+  const nNew=cards.filter(isNew).length;
+  const nDone=cards.filter(isDone).length;
+  const nLearn=cards.length-nNew-nDone;
+  $('dueNum').textContent=due.length;
+  $('stNew').textContent=nNew; $('stLearn').textContent=nLearn; $('stDone').textContent=nDone;
+  const total=cards.length||1;
+  const learned=(cards.length-due.length)/total;
+  $('ringFg').style.strokeDashoffset=232.5*(1-Math.min(1,Math.max(0,learned)));
+  $('dueDesc').textContent = due.length
+    ? `Сонгосон шүүлтээр ${cards.length} картаас ${due.length} нь давтагдахад бэлэн.`
+    : 'Өнөөдрийн давталт дууссан! 잘했어요 👏';
+  $('btnReview').disabled = !due.length;
+  $('btnReview').textContent = due.length?`Давталт эхлүүлэх (${Math.min(due.length,20)} карт)`:'Давталт дууссан';
+  // direction
+  [...$('dirToggle').children].forEach(b=>{
+    b.className = b.dataset.dir==='ko2mn'?'ko':'';
+    if(b.dataset.dir===settings.dir) b.classList.add(settings.dir==='ko2mn'?'active-ko':'active-mn');
+  });
+  // lesson chips
+  const wrap=$('lessonChips'); wrap.innerHTML='';
+  const lessonsAvail=[[1,'Хичээл 1'],[2,'Хичээл 2'],[3,'Хичээл 3']];
+  if(customCards.length) lessonsAvail.push(['import','Миний үгс']);
+  lessonsAvail.forEach(([v,label])=>{
+    const b=document.createElement('button');
+    b.className='chip'+(settings.lessons.includes(v)?' on':'');
+    b.textContent=label;
+    b.onclick=()=>{ 
+      const i=settings.lessons.indexOf(v);
+      if(i>=0){ if(settings.lessons.length>1) settings.lessons.splice(i,1); }
+      else settings.lessons.push(v);
+      save(K_SET,settings); renderHome();
+    };
+    wrap.appendChild(b);
+  });
+  // categories
+  const cats=[...new Set(allCards().filter(c=>settings.lessons.includes(c.lesson)).map(c=>c.category))];
+  const sel=$('catSelect');
+  sel.innerHTML='<option value="">Бүх ангилал</option>'+cats.map(c=>`<option ${c===settings.cat?'selected':''}>${c}</option>`).join('');
+  sel.onchange=()=>{settings.cat=sel.value;save(K_SET,settings);renderHome();};
+}
+$('dirToggle').onclick=e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  settings.dir=b.dataset.dir; save(K_SET,settings); renderHome();
+};
+
+/* ---------- TTS ---------- */
+let koVoice=null;
+function pickVoice(){
+  const vs=speechSynthesis.getVoices();
+  koVoice=vs.find(v=>v.lang&&v.lang.startsWith('ko'))||null;
+}
+if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged=pickVoice; }
+function speak(text){
+  if(!('speechSynthesis' in window))return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text.replace(/[?.!]/g,''));
+  u.lang='ko-KR'; if(koVoice)u.voice=koVoice; u.rate=.85;
+  speechSynthesis.speak(u);
+}
+
+/* ---------- session ---------- */
+let session=null;
+function startSession(mode){
+  const pool=filtered();
+  let cards = mode==='review' ? pool.filter(isDue) : pool.slice();
+  shuffle(cards);
+  cards=cards.slice(0,20);
+  if(!cards.length){toast('Энэ шүүлтэд карт алга');return;}
+  session={cards,ix:0,missed:[],correct:0,mode};
+  show('scrQuiz'); renderQ();
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}
+
+function renderQ(){
+  const {cards,ix}=session;
+  const c=cards[ix];
+  const dir=settings.dir;
+  $('progFill').style.width=(ix/cards.length*100)+'%';
+  $('counter').textContent=(ix+1)+'/'+cards.length;
+  $('qTag').textContent=(c.lesson==='import'?'Миний үгс':'Хичээл '+c.lesson)+' · '+c.category;
+  const term=$('qTerm');
+  term.textContent = dir==='ko2mn'?c.ko:c.mn;
+  term.className = 'term '+(dir==='ko2mn'?'ko':'mn-term');
+  $('btnSpeak').style.display = dir==='ko2mn'?'block':'none';
+  if(dir==='ko2mn') speak(c.ko);
+  // options
+  const correctAns = dir==='ko2mn'?c.mn:c.ko;
+  const sameCat=allCards().filter(x=>x.category===c.category&&cardId(x)!==cardId(c));
+  const others=allCards().filter(x=>x.category!==c.category&&cardId(x)!==cardId(c));
+  shuffle(sameCat); shuffle(others);
+  const distractPool=sameCat.concat(others);
+  const opts=[correctAns];
+  for(const d of distractPool){
+    const v=dir==='ko2mn'?d.mn:d.ko;
+    if(!opts.includes(v)) opts.push(v);
+    if(opts.length===4)break;
+  }
+  shuffle(opts);
+  const box=$('opts'); box.innerHTML=''; $('nextRow').innerHTML='';
+  opts.forEach(o=>{
+    const b=document.createElement('button');
+    b.className='opt'+(dir==='mn2ko'?' ko':'');
+    b.textContent=o;
+    b.onclick=()=>answer(b,o===correctAns,c,correctAns);
+    box.appendChild(b);
+  });
+}
+
+function answer(btn,ok,c,correctAns){
+  [...$('opts').children].forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===correctAns)b.classList.add('correct');
+  });
+  if(!ok)btn.classList.add('wrong');
+  grade(cardId(c), ok?4:1);
+  if(ok)session.correct++; else session.missed.push(c);
+  if(settings.dir==='mn2ko') speak(c.ko);
+  const nb=document.createElement('button');
+  nb.className='big-btn '+(ok?'primary':'ghost');
+  nb.textContent = session.ix+1<session.cards.length?'Дараах →':'Дүн харах';
+  nb.onclick=()=>{ session.ix++; session.ix<session.cards.length?renderQ():renderResults(); };
+  $('nextRow').appendChild(nb);
+  nb.focus();
+}
+
+function renderResults(){
+  const {cards,correct,missed}=session;
+  const pct=Math.round(correct/cards.length*100);
+  $('scorePct').textContent=pct+'%';
+  $('scorePct').style.color = pct>=80?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
+  $('scoreDesc').textContent=`${cards.length} картаас ${correct}-г зөв. `+(pct===100?'대박! 🎉':pct>=80?'Маш сайн!':'Алдсан үгс чинь удахгүй дахин гарна.');
+  $('missedWrap').style.display=missed.length?'block':'none';
+  const ml=$('missedList'); ml.innerHTML='';
+  missed.forEach(c=>{
+    const d=document.createElement('div');
+    d.className='missed-item';
+    d.innerHTML=`<span class="k ko">${esc(c.ko)}</span><span class="m">${esc(c.mn)}</span>`;
+    const sp=document.createElement('button'); sp.textContent='🔊'; sp.onclick=()=>speak(c.ko);
+    d.appendChild(sp); ml.appendChild(d);
+  });
+  show('scrResults'); renderHome();
+}
+const esc=s=>s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+/* ---------- screens ---------- */
+function show(id){['scrHome','scrQuiz','scrResults'].forEach(s=>$(s).classList.toggle('show',s===id));window.scrollTo(0,0)}
+$('btnReview').onclick=()=>startSession('review');
+$('btnPractice').onclick=()=>startSession('practice');
+$('btnQuit').onclick=()=>{speechSynthesis&&speechSynthesis.cancel();show('scrHome');renderHome();};
+$('btnHome').onclick=()=>{show('scrHome');renderHome();};
+$('btnAgain').onclick=()=>startSession('review');
+$('btnSpeak').onclick=()=>{const c=session.cards[session.ix];speak(c.ko)};
+
+/* ---------- import modal ---------- */
+let termDelim='comma', cardDelim='newline';
+const segBind=(segId,inputId,setter)=>{
+  $(segId).querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    $(segId).querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); $(inputId).value=''; setter(b.dataset.v); parsePreview();
+  });
+  $(inputId).oninput=()=>{
+    $(segId).querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    setter('custom'); parsePreview();
+  };
+};
+segBind('segTerm','termCustom',v=>termDelim=v);
+segBind('segCard','cardCustom',v=>cardDelim=v);
+$('impText').oninput=parsePreview;
+
+function delimChar(kind){
+  if(kind==='term') return termDelim==='tab'?'\t':termDelim==='comma'?',':$('termCustom').value;
+  return cardDelim==='newline'?'\n':cardDelim==='semicolon'?';':$('cardCustom').value;
+}
+function parseCards(){
+  const txt=$('impText').value;
+  const cd=delimChar('card'), td=delimChar('term');
+  if(!txt.trim()||!cd||!td) return [];
+  const out=[];
+  txt.split(cd).forEach(line=>{
+    line=line.trim(); if(!line)return;
+    const i=line.indexOf(td); if(i<0)return;
+    let ko=line.slice(0,i).trim(), def=line.slice(i+td.length).trim();
+    if(!ko||!def)return;
+    // хуучин формат: "이모지 Тайлбар • дуудлага"
+    def=def.replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}]+\s*/u,'');
+    const bullet=def.indexOf('•');
+    const mn=(bullet>=0?def.slice(0,bullet):def).trim();
+    if(ko&&mn) out.push({ko,mn,category:'Импорт',lesson:'import'});
+  });
+  return out;
+}
+function parsePreview(){
+  const cards=parseCards();
+  $('pvCount').textContent=cards.length;
+  $('impOk').disabled=!cards.length;
+  const box=$('pvBox');
+  box.innerHTML = cards.length
+    ? cards.slice(0,30).map(c=>`<div class="row"><span class="ko">${esc(c.ko)}</span><span>${esc(c.mn)}</span></div>`).join('')
+    : '<div class="empty">Одоогоор урьдчилан харах зүйл алга.</div>';
+}
+$('btnImport').onclick=()=>{$('modalBg').classList.add('show');parsePreview();};
+$('impCancel').onclick=()=>$('modalBg').classList.remove('show');
+$('modalBg').onclick=e=>{if(e.target===$('modalBg'))$('modalBg').classList.remove('show')};
+$('impOk').onclick=()=>{
+  const cards=parseCards(); if(!cards.length)return;
+  if(!$('impAppend').checked) customCards=[];
+  const ids=new Set(allCards().map(cardId));
+  let added=0;
+  cards.forEach(c=>{ if(!ids.has(cardId(c))){customCards.push(c);ids.add(cardId(c));added++;} });
+  save(K_CUSTOM,customCards);
+  if(!settings.lessons.includes('import')){settings.lessons.push('import');save(K_SET,settings);}
+  $('modalBg').classList.remove('show'); $('impText').value='';
+  toast(`${added} карт нэмэгдлээ`); renderHome();
+};
+
+/* ---------- toast ---------- */
+let toastT;
+function toast(msg){
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+/* =====================================================
+   Cloud sync (Supabase) — олон төхөөрөмж дундын хадгалалт
+   ===================================================== */
+const sbReady = SUPABASE_URL.startsWith('https://') && SUPABASE_ANON_KEY.length>20 && window.supabase;
+const sb = sbReady ? window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY) : null;
+let sbUser=null, pushT=null, pushing=false, dirty=false;
+
+function setSync(state){ // '', 'off','ok','busy','err'
+  const d=$('syncDot');
+  d.className='sync-dot'+(sbReady?' on':'');
+  if(state==='ok')d.classList.add('ok');
+  else if(state==='busy')d.classList.add('busy');
+  else if(state==='err')d.classList.add('err');
+}
+
+/* --- merge: локал ба серверийн явцыг алдагдалгүй нэгтгэх --- */
+function mergeSrs(local,remote){
+  const out={...remote};
+  for(const id in local){
+    const l=local[id], r=out[id];
+    if(!r || l.reps>r.reps || (l.reps===r.reps && (l.due||0)>(r.due||0))) out[id]=l;
+  }
+  return out;
+}
+function mergeCards(local,remote){
+  const out=[...remote], ids=new Set(remote.map(cardId));
+  local.forEach(c=>{ if(!ids.has(cardId(c))){out.push(c);ids.add(cardId(c));} });
+  return out;
+}
+
+async function cloudPull(){
+  if(!sb||!sbUser)return;
+  setSync('busy');
+  const {data,error}=await sb.from('user_data').select('custom_cards,srs,settings')
+    .eq('user_id',sbUser.id).maybeSingle();
+  if(error){setSync('err');toast('Синк алдаа: '+error.message);return;}
+  if(data){
+    srs=mergeSrs(srs,data.srs||{});
+    customCards=mergeCards(customCards,data.custom_cards||[]);
+    if(data.settings) settings={...settings,...data.settings};
+    localStorage.setItem(K_SRS,JSON.stringify(srs));
+    localStorage.setItem(K_CUSTOM,JSON.stringify(customCards));
+    localStorage.setItem(K_SET,JSON.stringify(settings));
+    renderHome();
+  }
+  await cloudPush(); // нэгтгэсэн эцсийн байдлыг сервер рүү
+}
+
+async function cloudPush(){
+  if(!sb||!sbUser){return;}
+  if(pushing){dirty=true;return;}
+  pushing=true; setSync('busy');
+  const {error}=await sb.from('user_data').upsert({
+    user_id:sbUser.id, custom_cards:customCards, srs, settings,
+    updated_at:new Date().toISOString()
+  });
+  pushing=false;
+  if(error){setSync('err');}
+  else{setSync('ok'); if(dirty){dirty=false;cloudPush();}}
+}
+
+function cloudScheduleSave(){
+  if(!sb||!sbUser)return;
+  clearTimeout(pushT);
+  pushT=setTimeout(cloudPush,1500); // debounce — хариулт бүрд биш, багцлаад илгээнэ
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'&&sb&&sbUser){clearTimeout(pushT);cloudPush();}
+});
+
+/* --- auth UI --- */
+function renderAuth(){
+  const logged=!!sbUser;
+  $('authForm').style.display=logged?'none':'block';
+  $('authLogged').style.display=logged?'block':'none';
+  if(logged){
+    $('authWho').textContent=sbUser.email;
+    $('authSyncInfo').textContent='Синк идэвхтэй — явц чинь бүх төхөөрөмж дээр автоматаар хадгалагдана.';
+  }
+  if(!sbReady){
+    $('authSub').textContent='Синк тохируулагдаагүй байна: index.html доторх SUPABASE_URL, SUPABASE_ANON_KEY-г бөглөнө үү. Түр зуур явц зөвхөн энэ төхөөрөмжид хадгалагдана.';
+    $('authForm').style.display='none';
+  }
+}
+function authMsg(txt,ok){const m=$('authMsg');m.textContent=txt;m.className='auth-msg '+(ok?'ok':'err');}
+
+$('btnAccount').onclick=()=>{renderAuth();$('authBg').classList.add('show');};
+$('authClose').onclick=()=>$('authBg').classList.remove('show');
+$('authBg').onclick=e=>{if(e.target===$('authBg'))$('authBg').classList.remove('show')};
+
+$('authLogin').onclick=async()=>{
+  if(!sb)return;
+  authMsg('Нэвтэрч байна…',true);
+  const {data,error}=await sb.auth.signInWithPassword({
+    email:$('authEmail').value.trim(), password:$('authPass').value});
+  if(error){authMsg(error.message);return;}
+  authMsg('');
+};
+$('authSignup').onclick=async()=>{
+  if(!sb)return;
+  const email=$('authEmail').value.trim(), password=$('authPass').value;
+  if(!email||password.length<6){authMsg('И-мэйл болон 6+ тэмдэгттэй нууц үг оруулна уу');return;}
+  authMsg('Бүртгэж байна…',true);
+  const {data,error}=await sb.auth.signUp({email,password});
+  if(error){authMsg(error.message);return;}
+  if(data.session) authMsg('Бүртгэгдлээ!',true);
+  else authMsg('И-мэйлээ шалгаад баталгаажуулна уу, дараа нь нэвтэрнэ.',true);
+};
+$('authLogout').onclick=async()=>{ if(sb) await sb.auth.signOut(); };
+
+if(sb){
+  sb.auth.onAuthStateChange((_e,session)=>{
+    sbUser=session?session.user:null;
+    setSync(sbUser?'ok':'');
+    renderAuth();
+    if(sbUser){ toast('Нэвтэрлээ — синк хийж байна'); cloudPull(); }
+  });
+}
+setSync('');
+
+renderHome();
+</script>
+</body>
+</html>
