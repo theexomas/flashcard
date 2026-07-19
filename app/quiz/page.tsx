@@ -72,7 +72,7 @@ export default function QuizPage() {
     }
     setOptions(shuffle(opts))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [card, useType, settings.dir, srs])
+  }, [card, useType, settings.dir])
 
   // auto-speak on card change (ko2mn)
   useEffect(() => {
