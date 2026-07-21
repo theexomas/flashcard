@@ -16,9 +16,12 @@ export default function GrammarAdmin() {
   const [editExamplesText, setEditExamplesText] = useState('[]')
   const [editErr, setEditErr] = useState('')
 
+  const [addMode, setAddMode] = useState<'form' | 'json'>('form')
   const [newForm, setNewForm] = useState<GrammarRule>(emptyForm)
   const [newExamplesText, setNewExamplesText] = useState('[]')
   const [newErr, setNewErr] = useState('')
+  const [bulkJsonText, setBulkJsonText] = useState('')
+  const [bulkJsonErr, setBulkJsonErr] = useState('')
   const [busy, setBusy] = useState(false)
 
   const total = useMemo(() => dbGrammar.length, [dbGrammar])
@@ -82,6 +85,32 @@ export default function GrammarAdmin() {
     setNewErr('')
   }
 
+  const handleAddBulkJson = async () => {
+    setBulkJsonErr('')
+    let arr: GrammarRule[]
+    try {
+      arr = JSON.parse(bulkJsonText)
+      if (!Array.isArray(arr)) throw new Error('Array биш байна')
+    } catch (e: unknown) {
+      setBulkJsonErr('JSON алдаа: ' + (e instanceof Error ? e.message : String(e)))
+      return
+    }
+    const bad = arr.find(g => !g.title || !g.rule || g.lesson === undefined)
+    if (bad) { setBulkJsonErr('"lesson", "title", "rule" талбар бүх дүрэмд заавал байна'); return }
+    setBusy(true)
+    let added = 0
+    for (const g of arr) {
+      const { error } = await adminUpsertGrammar({
+        lesson: Number(g.lesson), title: g.title, rule: g.rule, examples: g.examples ?? [],
+      })
+      if (error) { setBusy(false); setToast('Алдаа: ' + error); return }
+      added++
+    }
+    setBusy(false)
+    setToast(`${added} дүрэм нэмэгдлээ`)
+    setBulkJsonText('')
+  }
+
   return (
     <div>
       <div className="sub" style={{ marginBottom: 12 }}>Нийт {total} дүрэм</div>
@@ -119,19 +148,52 @@ export default function GrammarAdmin() {
       </div>
 
       <h4 style={{ marginTop: 16 }}>Шинэ дүрэм нэмэх</h4>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <input className="auth-field" type="number" value={newForm.lesson} onChange={e => setNewForm({ ...newForm, lesson: Number(e.target.value) })} placeholder="lesson (тоо)" />
-        <input className="auth-field" value={newForm.title} onChange={e => setNewForm({ ...newForm, title: e.target.value })} placeholder="title" />
-        <textarea value={newForm.rule} onChange={e => setNewForm({ ...newForm, rule: e.target.value })} placeholder="rule (дүрмийн тайлбар)" style={{ minHeight: 80 }} />
-        <textarea
-          value={newExamplesText}
-          onChange={e => { setNewExamplesText(e.target.value); setNewErr('') }}
-          placeholder='[{"ko":"학생입니다.","mn":"Оюутан."}]'
-          style={{ minHeight: 100 }}
-        />
-        {newErr && <div className="auth-msg err">{newErr}</div>}
-        <button className="m-ok" onClick={handleAdd} disabled={busy}>Нэмэх</button>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+        <button
+          className={`chip${addMode === 'form' ? ' on' : ''}`}
+          style={{ flex: 1, borderRadius: 10, textAlign: 'center' }}
+          onClick={() => setAddMode('form')}
+        >
+          Формоор
+        </button>
+        <button
+          className={`chip${addMode === 'json' ? ' on' : ''}`}
+          style={{ flex: 1, borderRadius: 10, textAlign: 'center' }}
+          onClick={() => setAddMode('json')}
+        >
+          JSON-оор (олноор)
+        </button>
       </div>
+
+      {addMode === 'form' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <input className="auth-field" type="number" value={newForm.lesson} onChange={e => setNewForm({ ...newForm, lesson: Number(e.target.value) })} placeholder="lesson (тоо)" />
+          <input className="auth-field" value={newForm.title} onChange={e => setNewForm({ ...newForm, title: e.target.value })} placeholder="title" />
+          <textarea value={newForm.rule} onChange={e => setNewForm({ ...newForm, rule: e.target.value })} placeholder="rule (дүрмийн тайлбар)" style={{ minHeight: 80 }} />
+          <textarea
+            value={newExamplesText}
+            onChange={e => { setNewExamplesText(e.target.value); setNewErr('') }}
+            placeholder='[{"ko":"학생입니다.","mn":"Оюутан."}]'
+            style={{ minHeight: 100 }}
+          />
+          {newErr && <div className="auth-msg err">{newErr}</div>}
+          <button className="m-ok" onClick={handleAdd} disabled={busy}>Нэмэх</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <p className="sub" style={{ margin: 0 }}>
+            Массив JSON буулгана уу: <code>lesson</code>, <code>title</code>, <code>rule</code> заавал, <code>examples</code> сонголт.
+          </p>
+          <textarea
+            value={bulkJsonText}
+            onChange={e => { setBulkJsonText(e.target.value); setBulkJsonErr('') }}
+            placeholder='[{"lesson":4,"title":"...","rule":"...","examples":[{"ko":"...","mn":"..."}]}]'
+            style={{ minHeight: 180 }}
+          />
+          {bulkJsonErr && <div className="auth-msg err">{bulkJsonErr}</div>}
+          <button className="m-ok" onClick={handleAddBulkJson} disabled={busy || !bulkJsonText.trim()}>Import</button>
+        </div>
+      )}
     </div>
   )
 }
