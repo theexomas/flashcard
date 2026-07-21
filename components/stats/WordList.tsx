@@ -15,6 +15,7 @@ export default function WordList() {
   const filtered = lessonFilter
     ? allCards.filter(c => String(c.lesson) === lessonFilter)
     : allCards
+  const lessonOptions = [...new Set(allCards.map(c => c.lesson).filter((l): l is number => typeof l === 'number'))].sort((a, b) => a - b)
 
   // group by lesson + category
   const groups: Record<string, Card[]> = {}
@@ -34,9 +35,9 @@ export default function WordList() {
         style={{ marginBottom: 10 }}
       >
         <option value="">Бүх хичээл</option>
-        <option value="1">Хичээл 1</option>
-        <option value="2">Хичээл 2</option>
-        <option value="3">Хичээл 3</option>
+        {lessonOptions.map(n => (
+          <option key={n} value={String(n)}>Хичээл {n}</option>
+        ))}
       </select>
 
       {!filtered.length && (

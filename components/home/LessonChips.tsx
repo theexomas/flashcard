@@ -3,19 +3,16 @@
 interface LessonChipsProps {
   lessons: (number | 'import')[]
   hasCustom: boolean
+  availableLessons: number[]
   onChange: (lessons: (number | 'import')[]) => void
 }
 
-const ALL_LESSONS: [number | 'import', string][] = [
-  [1, 'Хичээл 1'],
-  [2, 'Хичээл 2'],
-  [3, 'Хичээл 3'],
-]
-
-export default function LessonChips({ lessons, hasCustom, onChange }: LessonChipsProps) {
-  const available: [number | 'import', string][] = hasCustom
-    ? [...ALL_LESSONS, ['import', 'Миний үгс']]
-    : ALL_LESSONS
+export default function LessonChips({ lessons, hasCustom, availableLessons, onChange }: LessonChipsProps) {
+  const lessonNums = [...new Set(availableLessons)].sort((a, b) => a - b)
+  const available: [number | 'import', string][] = [
+    ...lessonNums.map((n): [number, string] => [n, 'Хичээл ' + n]),
+    ...(hasCustom ? ([['import', 'Миний үгс']] as [number | 'import', string][]) : []),
+  ]
 
   const toggle = (v: number | 'import') => {
     const i = lessons.indexOf(v)

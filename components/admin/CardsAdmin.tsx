@@ -13,7 +13,10 @@ export default function CardsAdmin() {
 
   const [editId, setEditId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Card>(emptyForm)
+  const [addMode, setAddMode] = useState<'form' | 'json'>('form')
   const [newForm, setNewForm] = useState<Card>(emptyForm)
+  const [jsonText, setJsonText] = useState('')
+  const [jsonErr, setJsonErr] = useState('')
   const [busy, setBusy] = useState(false)
 
   const stats = useMemo(() => {
@@ -63,6 +66,32 @@ export default function CardsAdmin() {
     setNewForm(emptyForm)
   }
 
+  const handleAddJson = async () => {
+    setJsonErr('')
+    let arr: Card[]
+    try {
+      arr = JSON.parse(jsonText)
+      if (!Array.isArray(arr)) throw new Error('Array биш байна')
+    } catch (e: unknown) {
+      setJsonErr('JSON алдаа: ' + (e instanceof Error ? e.message : String(e)))
+      return
+    }
+    const bad = arr.find(c => !c.ko || !c.mn || c.lesson === undefined)
+    if (bad) { setJsonErr('"ko", "mn", "lesson" талбар бүх картад заавал байна'); return }
+    setBusy(true)
+    let added = 0
+    for (const c of arr) {
+      const { error } = await adminUpsertCard({
+        ko: c.ko, mn: c.mn, category: c.category ?? '', lesson: Number(c.lesson), ex: c.ex ?? '',
+      })
+      if (error) { setBusy(false); setToast('Алдаа: ' + error); return }
+      added++
+    }
+    setBusy(false)
+    setToast(`${added} карт нэмэгдлээ`)
+    setJsonText('')
+  }
+
   return (
     <div>
       <div className="sub" style={{ marginBottom: 12 }}>
@@ -105,14 +134,47 @@ export default function CardsAdmin() {
       </div>
 
       <h4 style={{ marginTop: 16 }}>Шинэ карт нэмэх</h4>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <input className="auth-field" value={newForm.ko} onChange={e => setNewForm({ ...newForm, ko: e.target.value })} placeholder="ko (солонгос үг)" />
-        <input className="auth-field" value={newForm.mn} onChange={e => setNewForm({ ...newForm, mn: e.target.value })} placeholder="mn (монгол орчуулга)" />
-        <input className="auth-field" value={newForm.category} onChange={e => setNewForm({ ...newForm, category: e.target.value })} placeholder="category" />
-        <input className="auth-field" type="number" value={newForm.lesson as number} onChange={e => setNewForm({ ...newForm, lesson: Number(e.target.value) })} placeholder="lesson (тоо)" />
-        <input className="auth-field" value={newForm.ex ?? ''} onChange={e => setNewForm({ ...newForm, ex: e.target.value })} placeholder="жишээ өгүүлбэр" />
-        <button className="m-ok" onClick={handleAdd} disabled={busy}>Нэмэх</button>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+        <button
+          className={`chip${addMode === 'form' ? ' on' : ''}`}
+          style={{ flex: 1, borderRadius: 10, textAlign: 'center' }}
+          onClick={() => setAddMode('form')}
+        >
+          Формоор
+        </button>
+        <button
+          className={`chip${addMode === 'json' ? ' on' : ''}`}
+          style={{ flex: 1, borderRadius: 10, textAlign: 'center' }}
+          onClick={() => setAddMode('json')}
+        >
+          JSON-оор
+        </button>
       </div>
+
+      {addMode === 'form' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <input className="auth-field" value={newForm.ko} onChange={e => setNewForm({ ...newForm, ko: e.target.value })} placeholder="ko (солонгос үг)" />
+          <input className="auth-field" value={newForm.mn} onChange={e => setNewForm({ ...newForm, mn: e.target.value })} placeholder="mn (монгол орчуулга)" />
+          <input className="auth-field" value={newForm.category} onChange={e => setNewForm({ ...newForm, category: e.target.value })} placeholder="category" />
+          <input className="auth-field" type="number" value={newForm.lesson as number} onChange={e => setNewForm({ ...newForm, lesson: Number(e.target.value) })} placeholder="lesson (тоо)" />
+          <input className="auth-field" value={newForm.ex ?? ''} onChange={e => setNewForm({ ...newForm, ex: e.target.value })} placeholder="жишээ өгүүлбэр" />
+          <button className="m-ok" onClick={handleAdd} disabled={busy}>Нэмэх</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <p className="sub" style={{ margin: 0 }}>
+            Массив JSON буулгана уу: <code>ko</code>, <code>mn</code>, <code>lesson</code> заавал, <code>category</code>/<code>ex</code> сонголт.
+          </p>
+          <textarea
+            value={jsonText}
+            onChange={e => { setJsonText(e.target.value); setJsonErr('') }}
+            placeholder='[{"ko":"휴대전화","mn":"гар утас","category":"Шинэ үг","lesson":2,"ex":"휴대전화가 있습니다."}]'
+            style={{ minHeight: 160 }}
+          />
+          {jsonErr && <div className="auth-msg err">{jsonErr}</div>}
+          <button className="m-ok" onClick={handleAddJson} disabled={busy || !jsonText.trim()}>Import</button>
+        </div>
+      )}
     </div>
   )
 }

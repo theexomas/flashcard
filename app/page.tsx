@@ -31,6 +31,7 @@ export default function HomePage() {
   const allCards = allCardsFn()
   const lessonFiltered = allCards.filter(c => settings.lessons.includes(c.lesson))
   const cats = [...new Set(lessonFiltered.map(c => c.category))]
+  const availableLessons = [...new Set(allCards.map(c => c.lesson).filter((l): l is number => typeof l === 'number'))]
 
   const learned = total > 0 ? (total - nDue) / total : 0
 
@@ -81,6 +82,7 @@ export default function HomePage() {
       <LessonChips
         lessons={settings.lessons}
         hasCustom={customCards.length > 0}
+        availableLessons={availableLessons}
         onChange={lessons => updateSettings({ lessons })}
       />
 
