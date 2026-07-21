@@ -2,6 +2,8 @@ export const K_CUSTOM = 'hmk_custom_v2'
 export const K_SRS = 'hmk_srs_v2'
 export const K_SET = 'hmk_settings_v2'
 export const K_GRAMMAR = 'hm_grammar'
+export const K_DB_CARDS = 'hmk_db_cards_v1'
+export const K_DB_GRAMMAR = 'hmk_db_grammar_v1'
 
 export function loadJSON<T>(key: string, defaultVal: T): T {
   if (typeof window === 'undefined') return defaultVal

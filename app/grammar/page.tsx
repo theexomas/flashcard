@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGameStore } from '@/store/gameStore'
-import { BUILTIN_GRAMMAR } from '@/lib/data'
 import GrammarCard from '@/components/grammar/GrammarCard'
 import ImportModal from '@/components/ImportModal'
 import Toast from '@/components/Toast'
@@ -12,9 +11,10 @@ import type { GrammarRule } from '@/store/gameStore'
 export default function GrammarPage() {
   const router = useRouter()
   const grammarCards = useGameStore(s => s.grammarCards)
+  const dbGrammar = useGameStore(s => s.dbGrammar)
   const [importOpen, setImportOpen] = useState(false)
 
-  const allGrammar = [...BUILTIN_GRAMMAR, ...grammarCards]
+  const allGrammar = [...dbGrammar, ...grammarCards]
 
   // group by lesson
   const byLesson: Record<string, GrammarRule[]> = {}

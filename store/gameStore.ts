@@ -14,7 +14,7 @@ import {
   type GrammarRule,
   type SRSEntry,
 } from '@/lib/sm2'
-import { K_GRAMMAR, loadJSON, saveJSON } from '@/lib/storage'
+import { K_GRAMMAR, K_DB_CARDS, K_DB_GRAMMAR, loadJSON, saveJSON } from '@/lib/storage'
 import { supabase } from '@/lib/supabase'
 
 export type { Card, GrammarRule, SRSEntry }
@@ -41,10 +41,15 @@ export interface SbUser {
   email: string
 }
 
+const ADMIN_EMAIL = 'darklight749@gmail.com'
+
 interface GameState {
   srs: Record<string, SRSEntry>
   customCards: Card[]
   grammarCards: GrammarRule[]
+  dbCards: Card[]
+  dbGrammar: GrammarRule[]
+  contentLoaded: boolean
   settings: Settings
   session: Session | null
   toast: string
@@ -65,6 +70,11 @@ interface GameState {
   cloudScheduleSave: () => void
   allCards: () => Card[]
   filteredCards: () => Card[]
+  fetchContent: () => Promise<void>
+  adminUpsertCard: (card: Card) => Promise<{ error: string | null }>
+  adminDeleteCard: (id: string) => Promise<{ error: string | null }>
+  adminUpsertGrammar: (rule: GrammarRule) => Promise<{ error: string | null }>
+  adminDeleteGrammar: (id: string) => Promise<{ error: string | null }>
 }
 
 let pushTimer: ReturnType<typeof setTimeout> | null = null
@@ -113,6 +123,9 @@ export const useGameStore = create<GameState>()(
       srs: {},
       customCards: [],
       grammarCards: loadJSON<GrammarRule[]>(K_GRAMMAR, []),
+      dbCards: loadJSON<Card[]>(K_DB_CARDS, BUILTIN),
+      dbGrammar: loadJSON<GrammarRule[]>(K_DB_GRAMMAR, BUILTIN_GRAMMAR),
+      contentLoaded: false,
       settings: {
         dir: 'ko2mn',
         lessons: [1, 2, 3, 'import'],
@@ -126,7 +139,8 @@ export const useGameStore = create<GameState>()(
       sbUser: null,
 
       allCards(): Card[] {
-        return [...BUILTIN, ...get().customCards]
+        const { dbCards, customCards } = get()
+        return [...(dbCards.length ? dbCards : BUILTIN), ...customCards]
       },
 
       filteredCards(): Card[] {
@@ -284,6 +298,84 @@ export const useGameStore = create<GameState>()(
         if (pushTimer) clearTimeout(pushTimer)
         pushTimer = setTimeout(() => cloudPushFn(get), 1500)
       },
+
+      async fetchContent() {
+        const [cardsRes, grammarRes] = await Promise.all([
+          supabase.from('cards').select('*'),
+          supabase.from('grammar_rules').select('*'),
+        ])
+        if (!cardsRes.error && cardsRes.data && cardsRes.data.length) {
+          const dbCards = cardsRes.data as Card[]
+          set({ dbCards })
+          saveJSON(K_DB_CARDS, dbCards)
+        }
+        if (!grammarRes.error && grammarRes.data && grammarRes.data.length) {
+          const dbGrammar = grammarRes.data as GrammarRule[]
+          set({ dbGrammar })
+          saveJSON(K_DB_GRAMMAR, dbGrammar)
+        }
+        set({ contentLoaded: true })
+      },
+
+      async adminUpsertCard(card: Card) {
+        const { id, ...rest } = card
+        const payload = id ? { id, ...rest } : rest
+        const { data, error } = await supabase
+          .from('cards')
+          .upsert(payload as Record<string, unknown>)
+          .select()
+        if (error) return { error: error.message }
+        const saved = data?.[0] as Card | undefined
+        set(state => {
+          const dbCards = id
+            ? state.dbCards.map(c => (c.id === id ? (saved ?? card) : c))
+            : [...state.dbCards, saved ?? card]
+          saveJSON(K_DB_CARDS, dbCards)
+          return { dbCards }
+        })
+        return { error: null }
+      },
+
+      async adminDeleteCard(id: string) {
+        const { error } = await supabase.from('cards').delete().eq('id', id)
+        if (error) return { error: error.message }
+        set(state => {
+          const dbCards = state.dbCards.filter(c => c.id !== id)
+          saveJSON(K_DB_CARDS, dbCards)
+          return { dbCards }
+        })
+        return { error: null }
+      },
+
+      async adminUpsertGrammar(rule: GrammarRule) {
+        const { id, ...rest } = rule
+        const payload = id ? { id, ...rest } : rest
+        const { data, error } = await supabase
+          .from('grammar_rules')
+          .upsert(payload as Record<string, unknown>)
+          .select()
+        if (error) return { error: error.message }
+        const saved = data?.[0] as GrammarRule | undefined
+        set(state => {
+          const dbGrammar = id
+            ? state.dbGrammar.map(g => (g.id === id ? (saved ?? rule) : g))
+            : [...state.dbGrammar, saved ?? rule]
+          saveJSON(K_DB_GRAMMAR, dbGrammar)
+          return { dbGrammar }
+        })
+        return { error: null }
+      },
+
+      async adminDeleteGrammar(id: string) {
+        const { error } = await supabase.from('grammar_rules').delete().eq('id', id)
+        if (error) return { error: error.message }
+        set(state => {
+          const dbGrammar = state.dbGrammar.filter(g => g.id !== id)
+          saveJSON(K_DB_GRAMMAR, dbGrammar)
+          return { dbGrammar }
+        })
+        return { error: null }
+      },
     }),
     {
       name: 'hmk_store',
@@ -326,7 +418,7 @@ export function useCardStats() {
 }
 
 function filtered(s: GameState) {
-  const all = [...BUILTIN, ...s.customCards]
+  const all = [...(s.dbCards.length ? s.dbCards : BUILTIN), ...s.customCards]
   return all.filter(
     c => s.settings.lessons.includes(c.lesson) &&
          (!s.settings.cat || c.category === s.settings.cat)
@@ -334,7 +426,7 @@ function filtered(s: GameState) {
 }
 
 // Export helpers for use in components
-export { isNew, isDue, isDone, cardId, getState }
+export { isNew, isDue, isDone, cardId, getState, ADMIN_EMAIL }
 export function allCards(customCards: Card[]) {
   return [...BUILTIN, ...customCards]
 }

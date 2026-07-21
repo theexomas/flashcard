@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGameStore, cardId } from '@/store/gameStore'
-import { BUILTIN } from '@/lib/data'
 import { useTTS } from '@/lib/tts'
 import { levenshtein, normAns } from '@/lib/sm2'
 import QuizCard from '@/components/quiz/QuizCard'
@@ -28,7 +27,7 @@ export default function QuizPage() {
   const router = useRouter()
   const session = useGameStore(s => s.session)
   const settings = useGameStore(s => s.settings)
-  const customCards = useGameStore(s => s.customCards)
+  const allCardsFn = useGameStore(s => s.allCards)
   const srs = useGameStore(s => s.srs)
   const answerMCQWrong = useGameStore(s => s.answerMCQWrong)
   const rateCard = useGameStore(s => s.rateCard)
@@ -43,7 +42,7 @@ export default function QuizPage() {
   const [wrongLabel, setWrongLabel] = useState('')
   const [options, setOptions] = useState<string[]>([])
 
-  const allCards = [...BUILTIN, ...customCards]
+  const allCards = allCardsFn()
 
   useEffect(() => {
     if (!session) {

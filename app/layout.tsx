@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import ContentLoader from '@/components/ContentLoader'
 
 export const metadata: Metadata = {
   title: '한몽 카드 · Солонгос үг сурах',
@@ -21,7 +22,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <ContentLoader />
+        {children}
+      </body>
     </html>
   )
 }

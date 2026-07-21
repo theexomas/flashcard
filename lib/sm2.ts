@@ -7,6 +7,7 @@ export type SRSEntry = {
 }
 
 export type Card = {
+  id?: string
   ko: string
   mn: string
   category: string
@@ -15,6 +16,7 @@ export type Card = {
 }
 
 export type GrammarRule = {
+  id?: string
   lesson: number
   title: string
   rule: string

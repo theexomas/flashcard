@@ -15,3 +15,7 @@ npm-debug.log*
 # Misc
 .DS_Store
 *.pem
+tsconfig.tsbuildinfo
+
+# One-off generated Supabase seed data (regenerate via scripts/generate-seed-sql.mjs)
+seed.sql

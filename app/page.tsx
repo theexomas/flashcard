@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useGameStore, useCardStats } from '@/store/gameStore'
-import { BUILTIN } from '@/lib/data'
+import { useGameStore, useCardStats, ADMIN_EMAIL } from '@/store/gameStore'
 import Header from '@/components/Header'
 import Toast from '@/components/Toast'
 import ImportModal from '@/components/ImportModal'
@@ -19,15 +18,17 @@ export default function HomePage() {
   const router = useRouter()
   const settings = useGameStore(s => s.settings)
   const customCards = useGameStore(s => s.customCards)
+  const allCardsFn = useGameStore(s => s.allCards)
   const updateSettings = useGameStore(s => s.updateSettings)
   const startSession = useGameStore(s => s.startSession)
   const setToast = useGameStore(s => s.setToast)
+  const sbUser = useGameStore(s => s.sbUser)
   const { nNew, nLearn, nDone, nDue, total } = useCardStats()
 
   const [importOpen, setImportOpen] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
 
-  const allCards = [...BUILTIN, ...customCards]
+  const allCards = allCardsFn()
   const lessonFiltered = allCards.filter(c => settings.lessons.includes(c.lesson))
   const cats = [...new Set(lessonFiltered.map(c => c.category))]
 
@@ -47,7 +48,11 @@ export default function HomePage() {
 
   return (
     <div className="wrap">
-      <Header onImport={() => setImportOpen(true)} onAccount={() => setAuthOpen(true)} />
+      <Header
+        onImport={() => setImportOpen(true)}
+        onAccount={() => setAuthOpen(true)}
+        onAdmin={sbUser?.email === ADMIN_EMAIL ? () => router.push('/admin') : undefined}
+      />
 
       <DueHero dueCount={nDue} totalCount={total} learnedFraction={learned} />
       <StatBadges nNew={nNew} nLearn={nLearn} nDone={nDone} />

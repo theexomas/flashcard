@@ -2,17 +2,16 @@
 
 import { useState } from 'react'
 import { useGameStore, cardId, isNew, isDone } from '@/store/gameStore'
-import { BUILTIN } from '@/lib/data'
 import { useTTS } from '@/lib/tts'
 import type { Card } from '@/store/gameStore'
 
 export default function WordList() {
   const srs = useGameStore(s => s.srs)
-  const customCards = useGameStore(s => s.customCards)
+  const allCardsFn = useGameStore(s => s.allCards)
   const speak = useTTS()
   const [lessonFilter, setLessonFilter] = useState('')
 
-  const allCards = [...BUILTIN, ...customCards]
+  const allCards = allCardsFn()
   const filtered = lessonFilter
     ? allCards.filter(c => String(c.lesson) === lessonFilter)
     : allCards

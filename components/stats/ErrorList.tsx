@@ -1,15 +1,14 @@
 'use client'
 
 import { useGameStore, cardId } from '@/store/gameStore'
-import { BUILTIN } from '@/lib/data'
 import { useTTS } from '@/lib/tts'
 
 export default function ErrorList() {
   const srs = useGameStore(s => s.srs)
-  const customCards = useGameStore(s => s.customCards)
+  const allCardsFn = useGameStore(s => s.allCards)
   const speak = useTTS()
 
-  const allCards = [...BUILTIN, ...customCards]
+  const allCards = allCardsFn()
   const withLap = allCards.filter(c => {
     const s = srs[cardId(c)]
     return s && s.lapses > 0
